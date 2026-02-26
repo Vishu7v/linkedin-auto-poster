@@ -354,20 +354,30 @@ STRICT LinkedIn post rules:
         }
     }
 
-    resp = requests.post(
-        url,
-        headers={"Content-Type": "application/json"},
-        json=payload,
-        timeout=30
-    )
-
-    if resp.status_code == 200:
-        text = resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
-        print(f"Generated {len(text)} chars successfully")
-        return text
-    else:
-        print(f"Gemini API failed: {resp.status_code} - {resp.text}")
-        sys.exit(1)
+    # Retry up to 3 times in case of timeout
+    for attempt in range(1, 4):
+        try:
+            print(f"Attempt {attempt}/3...")
+            resp = requests.post(
+                url,
+                headers={"Content-Type": "application/json"},
+                json=payload,
+                timeout=60        # increased from 30 to 60 seconds
+            )
+            if resp.status_code == 200:
+                text = resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+                print(f"Generated {len(text)} chars successfully")
+                return text
+            else:
+                print(f"Gemini API failed: {resp.status_code} - {resp.text}")
+                sys.exit(1)
+        except requests.exceptions.Timeout:
+            print(f"Attempt {attempt} timed out.")
+            if attempt == 3:
+                print("All 3 attempts failed. Exiting.")
+                sys.exit(1)
+            print("Retrying in 10 seconds...")
+            time.sleep(10)
 
 # ── POST TO LINKEDIN ──────────────────────────────────────────
 def post_to_linkedin(text: str):
@@ -419,4 +429,5 @@ print("=" * 50 + "\n")
 post_to_linkedin(post_text)
 
 print("Done! Post is live on LinkedIn.")
+
 # print("Next run: tomorrow at 8:30 AM IST (via GitHub Actions)")
