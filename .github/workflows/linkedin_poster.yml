@@ -1,1 +1,44 @@
+name: LinkedIn Daily Auto Poster
 
+on:
+  schedule:
+    - cron: '0 3 * * *'
+    - cron: '30 11 * * *'
+  workflow_dispatch:
+
+jobs:
+  post_to_linkedin:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Pull latest tracker file
+        run: |
+          git config --global user.email "autoposter@github.com"
+          git config --global user.name "Auto Poster"
+          git pull --rebase origin main || true
+
+      - name: Run LinkedIn Auto Poster
+        env:
+          LINKEDIN_TOKEN: ${{ secrets.LINKEDIN_TOKEN }}
+          PERSON_URN: ${{ secrets.PERSON_URN }}
+          GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
+        run: python post.py
+
+      - name: Save tracker file back to repo
+        run: |
+          git add last_posts.json || true
+          git diff --staged --quiet || git commit -m "Update rotation tracker [skip ci]"
+          git push || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
