@@ -2,14 +2,15 @@
 # post.py — LinkedIn AI Auto Poster using Google Gemini (FREE)
 # Rotates through ALL 12 content types before repeating any!
 # Tracks used types in last_posts.json
+# Has fallback models in case one is unavailable (503/429)
 # ─────────────────────────────────────────────────────────────
 import requests, random, os, sys, json, time
 from datetime import datetime
 
 # ── CREDENTIALS ───────────────────────────────────────────────
-LINKEDIN_TOKEN = os.environ.get("LINKEDIN_TOKEN", "AQW2-1Yw3CJY6xJGGvEQfkexebwpywN9D6S8XPiXIwDy1em2qTjwHVDrKRqMadURrFkcJSMJr0qeyhn1qP0NDjCsycMsBpwoBGK69EFpDnr4zgO5osPLnIA2DmxAsNxm57oK9bzwPxQu8uN_jc-fft7zkF5nxBPSzXDEVbSb9eyosn9zjF-wyTx0PJLLd8uR3lj4nACs26CqXgQswpOTUJoU4EVHkSirCTFqj8VZBzZeHWCYSX8nlK4vtc6S4H9eQu2sKMT6mBAdxfgzHWBmBxp0Zfm9i3_W3c2wEojdWu55Y2kGYaUUTLsl8zZpeRkpVWn9vcnOmqFw-XWrBdNh7vrA9L_NIw")
-PERSON_URN     = os.environ.get("PERSON_URN",     "urn:li:person:0THMb1Oyen")
-GEMINI_KEY     = os.environ.get("GEMINI_KEY",     "AIzaSyCSVuDtPWXA87A4RAFL3uFWihNzehSXE3g")
+LINKEDIN_TOKEN = os.environ.get("LINKEDIN_TOKEN")
+PERSON_URN     = os.environ.get("PERSON_URN")
+GEMINI_KEY     = os.environ.get("GEMINI_KEY")
 
 # ── ROTATION TRACKER FILE ─────────────────────────────────────
 TRACKER_FILE = "last_posts.json"
@@ -281,7 +282,6 @@ Save this for your next project!
 
 # ── ROTATION LOGIC ────────────────────────────────────────────
 def load_tracker():
-    """Load the list of recently used content type labels."""
     if os.path.exists(TRACKER_FILE):
         try:
             with open(TRACKER_FILE, "r") as f:
@@ -291,34 +291,25 @@ def load_tracker():
     return []
 
 def save_tracker(used: list):
-    """Save updated used list to tracker file."""
     with open(TRACKER_FILE, "w") as f:
         json.dump({"used": used, "updated": str(datetime.now())}, f, indent=2)
 
 def pick_content_type() -> dict:
-    """Pick a content type that hasn't been used recently.
-    Cycles through all 12 before repeating any."""
     all_labels  = [c["label"] for c in CONTENT_TYPES]
     used_labels = load_tracker()
 
-    # Find types NOT yet used in current cycle
     unused = [c for c in CONTENT_TYPES if c["label"] not in used_labels]
 
-    # If all 12 used — reset and start fresh cycle
     if not unused:
         print("All 12 content types used! Starting fresh rotation cycle.")
         used_labels = []
         unused = CONTENT_TYPES
         save_tracker([])
 
-    # Pick randomly from unused types
     chosen = random.choice(unused)
-
-    # Mark as used
     used_labels.append(chosen["label"])
     save_tracker(used_labels)
 
-    # Show rotation status
     print(f"Rotation: {len(used_labels)}/12 types used this cycle")
     remaining = [l for l in all_labels if l not in used_labels]
     if remaining:
@@ -344,8 +335,6 @@ STRICT LinkedIn post rules:
 
     full_prompt = f"{content_type['prompt']}\n\n{base_rules}\n\nWrite ONLY the post. No intro, no explanation."
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key={GEMINI_KEY}"
-
     payload = {
         "contents": [{"parts": [{"text": full_prompt}]}],
         "generationConfig": {
@@ -354,30 +343,44 @@ STRICT LinkedIn post rules:
         }
     }
 
-    # Retry up to 3 times in case of timeout
-    for attempt in range(1, 4):
-        try:
-            print(f"Attempt {attempt}/3...")
-            resp = requests.post(
-                url,
-                headers={"Content-Type": "application/json"},
-                json=payload,
-                timeout=60        # increased from 30 to 60 seconds
-            )
-            if resp.status_code == 200:
-                text = resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
-                print(f"Generated {len(text)} chars successfully")
-                return text
-            else:
-                print(f"Gemini API failed: {resp.status_code} - {resp.text}")
-                sys.exit(1)
-        except requests.exceptions.Timeout:
-            print(f"Attempt {attempt} timed out.")
-            if attempt == 3:
-                print("All 3 attempts failed. Exiting.")
-                sys.exit(1)
-            print("Retrying in 10 seconds...")
-            time.sleep(10)
+    # Fallback models — tries each one if previous fails with 503/429
+    models = [
+        "gemini-flash-lite-latest",
+        "gemini-2.0-flash-lite",
+        "gemini-pro-latest",
+    ]
+
+    for model in models:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_KEY}"
+        for attempt in range(1, 3):
+            try:
+                print(f"Trying {model} — attempt {attempt}/2...")
+                resp = requests.post(
+                    url,
+                    headers={"Content-Type": "application/json"},
+                    json=payload,
+                    timeout=60
+                )
+                if resp.status_code == 200:
+                    text = resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+                    print(f"Generated {len(text)} chars using {model}")
+                    return text
+                elif resp.status_code in [503, 429]:
+                    print(f"{model} unavailable ({resp.status_code}) — trying next model...")
+                    time.sleep(5)
+                    break  # move to next model
+                else:
+                    print(f"Gemini API failed: {resp.status_code} - {resp.text}")
+                    sys.exit(1)
+            except requests.exceptions.Timeout:
+                print(f"Timeout on {model} attempt {attempt}")
+                if attempt == 2:
+                    print(f"Moving to next model...")
+                    break
+                time.sleep(10)
+
+    print("All models failed. Exiting.")
+    sys.exit(1)
 
 # ── POST TO LINKEDIN ──────────────────────────────────────────
 def post_to_linkedin(text: str):
@@ -429,6 +432,3 @@ print("=" * 50 + "\n")
 post_to_linkedin(post_text)
 
 print("Done! Post is live on LinkedIn.")
-
-# print("Next run: tomorrow at 8:30 AM IST (via GitHub Actions)")
-
