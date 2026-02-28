@@ -3,8 +3,8 @@ name: LinkedIn Daily Auto Poster
 
 on:
   schedule:
-    - cron: '0 3 * * *'
-    - cron: '30 11 * * *'
+    - cron: '30 21 * * *'
+    - cron: '0 18 * * *'
   workflow_dispatch:
 
 jobs:
