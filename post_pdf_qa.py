@@ -81,9 +81,11 @@ Make answers practical, not theoretical. Include code when relevant.
     }
 
     models = [
-        "gemini-flash-lite-latest",
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
         "gemini-2.0-flash-lite",
-        "gemini-pro-latest",
+        "gemini-flash-latest",
+        "gemini-flash-lite-latest",
     ]
 
     for model in models:
