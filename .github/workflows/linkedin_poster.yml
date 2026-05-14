@@ -1,18 +1,24 @@
-# LinkedIn Auto Poster - Daily Posts + Weekly PDF Q&A
-# MODIFIED FOR 10 PM IST WEEKLY PDF POSTING
-# Tuesday & Friday at 10 PM IST (16:30 UTC)
-name: LinkedIn Daily Auto Poster + Weekly PDF Q&A
+# LinkedIn Auto Poster - Daily Posts + Weekly PDF Q&A + Mon & Thu Tech PDF
+# Schedule summary:
+#   Daily text posts       : 6 PM IST (12:30 UTC) and 9:30 PM IST (15:00 UTC)
+#   Tue & Fri PDF Q&A      : 10 PM IST (16:30 UTC)
+#   Mon & Thu Tech PDF     : 10:30 PM IST (17:00 UTC)
+name: LinkedIn Daily Auto Poster + Weekly PDF Q&A + Thursday Tech PDF
 
 on:
   schedule:
-    # Daily posts: 2x per day (6 PM & 9:30 PM IST) - UNCHANGED
+    # Daily text posts: 6 PM & 9:30 PM IST
     - cron: '30 12 * * *'  # 6 PM IST (12:30 UTC)
     - cron: '0 15 * * *'   # 9:30 PM IST (15:00 UTC)
-    
-    # Weekly PDF Q&A: Tuesday & Friday at 10 PM IST (16:30 UTC) - CHANGED TO 10 PM
-    - cron: '30 16 * * 2'  # Tuesday 10 PM IST (16:30 UTC)
-    - cron: '30 16 * * 5'  # Friday 10 PM IST (16:30 UTC)
-    
+
+    # Weekly PDF Q&A: Tuesday & Friday at 10 PM IST (16:30 UTC)
+    - cron: '30 16 * * 2'  # Tuesday 10 PM IST
+    - cron: '30 16 * * 5'  # Friday  10 PM IST
+
+    # Weekly Tech PDF: Monday & Thursday at 10:30 PM IST (17:00 UTC)
+    - cron: '0 17 * * 1'   # Monday    10:30 PM IST (17:00 UTC)
+    - cron: '0 17 * * 4'   # Thursday  10:30 PM IST (17:00 UTC)
+
   workflow_dispatch:  # Manual trigger
 
 jobs:
@@ -24,13 +30,16 @@ jobs:
       - name: Determine which job to run
         id: check
         run: |
-          # Get current day and time
-          DAY=$(date +%u)  # 1=Monday, 2=Tuesday, 5=Friday
+          # Get current day (1=Mon … 7=Sun) and UTC time
+          DAY=$(date +%u)
           HOUR=$(date +%H)
           MIN=$(date +%M)
-          
-          # If Tuesday or Friday (day 2 or 5) at 16:30 UTC → PDF job
-          if [[ ($DAY -eq 2 || $DAY -eq 5) && $HOUR -eq 16 && $MIN -eq 30 ]]; then
+
+          # Thursday 13:30 UTC → weekly tech PDF
+          if [[ ($DAY -eq 1 || $DAY -eq 4) && $HOUR -eq 17 && $MIN -eq 0 ]]; then
+            echo "job_type=weekly_tech" >> $GITHUB_OUTPUT
+          # Tuesday or Friday 16:30 UTC → Q&A PDF
+          elif [[ ($DAY -eq 2 || $DAY -eq 5) && $HOUR -eq 16 && $MIN -eq 30 ]]; then
             echo "job_type=pdf" >> $GITHUB_OUTPUT
           else
             echo "job_type=daily" >> $GITHUB_OUTPUT
@@ -80,18 +89,52 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-      
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
         run: pip install requests reportlab
-      
-      - name: Run LinkedIn PDF Q&A Poster (Weekly - Tuesday & Friday 10 PM IST)
+
+      - name: Run LinkedIn PDF Q&A Poster (Tue & Fri 10 PM IST)
         env:
           LINKEDIN_TOKEN: ${{ secrets.LINKEDIN_TOKEN }}
           PERSON_URN: ${{ secrets.PERSON_URN }}
           GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
         run: python post_pdf_qa.py
+
+  # ── NEW: Weekly Thursday 7 PM IST Tech PDF ──────────────────────────────────
+  post_weekly_tech_pdf:
+    needs: determine_job
+    if: needs.determine_job.outputs.job_type == 'weekly_tech'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests reportlab
+
+      - name: Run Weekly Thursday Tech PDF Poster (Thursday 7 PM IST)
+        env:
+          LINKEDIN_TOKEN: ${{ secrets.LINKEDIN_TOKEN }}
+          PERSON_URN: ${{ secrets.PERSON_URN }}
+          GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
+        run: python post_pdf_weekly_tech.py
+
+      - name: Save rotation tracker back to repo
+        run: |
+          git config --global user.email "autoposter@github.com"
+          git config --global user.name "Auto Poster"
+          git add last_weekly_tech.json || true
+          git diff --staged --quiet || git commit -m "Update weekly tech rotation tracker [skip ci]"
+          git push || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
