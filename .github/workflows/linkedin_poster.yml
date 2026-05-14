@@ -1,0 +1,97 @@
+# LinkedIn Auto Poster - Daily Posts + Weekly PDF Q&A
+# MODIFIED FOR 10 PM IST WEEKLY PDF POSTING
+# Tuesday & Friday at 10 PM IST (16:30 UTC)
+name: LinkedIn Daily Auto Poster + Weekly PDF Q&A
+
+on:
+  schedule:
+    # Daily posts: 2x per day (6 PM & 9:30 PM IST) - UNCHANGED
+    - cron: '30 12 * * *'  # 6 PM IST (12:30 UTC)
+    - cron: '0 15 * * *'   # 9:30 PM IST (15:00 UTC)
+    
+    # Weekly PDF Q&A: Tuesday & Friday at 10 PM IST (16:30 UTC) - CHANGED TO 10 PM
+    - cron: '30 16 * * 2'  # Tuesday 10 PM IST (16:30 UTC)
+    - cron: '30 16 * * 5'  # Friday 10 PM IST (16:30 UTC)
+    
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  determine_job:
+    runs-on: ubuntu-latest
+    outputs:
+      job_type: ${{ steps.check.outputs.job_type }}
+    steps:
+      - name: Determine which job to run
+        id: check
+        run: |
+          # Get current day and time
+          DAY=$(date +%u)  # 1=Monday, 2=Tuesday, 5=Friday
+          HOUR=$(date +%H)
+          MIN=$(date +%M)
+          
+          # If Tuesday or Friday (day 2 or 5) at 16:30 UTC → PDF job
+          if [[ ($DAY -eq 2 || $DAY -eq 5) && $HOUR -eq 16 && $MIN -eq 30 ]]; then
+            echo "job_type=pdf" >> $GITHUB_OUTPUT
+          else
+            echo "job_type=daily" >> $GITHUB_OUTPUT
+          fi
+
+  post_daily:
+    needs: determine_job
+    if: needs.determine_job.outputs.job_type == 'daily'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: pip install requests
+      
+      - name: Pull latest tracker file
+        run: |
+          git config --global user.email "autoposter@github.com"
+          git config --global user.name "Auto Poster"
+          git pull --rebase origin main || true
+      
+      - name: Run LinkedIn Auto Poster (Daily)
+        env:
+          LINKEDIN_TOKEN: ${{ secrets.LINKEDIN_TOKEN }}
+          PERSON_URN: ${{ secrets.PERSON_URN }}
+          GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
+        run: python post.py
+      
+      - name: Save tracker file back to repo
+        run: |
+          git add last_posts.json || true
+          git diff --staged --quiet || git commit -m "Update rotation tracker [skip ci]"
+          git push || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  post_pdf_qa:
+    needs: determine_job
+    if: needs.determine_job.outputs.job_type == 'pdf'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: pip install requests reportlab
+      
+      - name: Run LinkedIn PDF Q&A Poster (Weekly - Tuesday & Friday 10 PM IST)
+        env:
+          LINKEDIN_TOKEN: ${{ secrets.LINKEDIN_TOKEN }}
+          PERSON_URN: ${{ secrets.PERSON_URN }}
+          GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
+        run: python post_pdf_qa.py
