@@ -30,16 +30,12 @@ jobs:
       - name: Determine which job to run
         id: check
         run: |
-          # Get current day (1=Mon … 7=Sun) and UTC time
-          DAY=$(date +%u)
-          HOUR=$(date +%H)
-          MIN=$(date +%M)
+          # Use the exact cron string that triggered this run (reliable — no clock drift issues)
+          SCHEDULE="${{ github.event.schedule }}"
 
-          # Thursday 13:30 UTC → weekly tech PDF
-          if [[ ($DAY -eq 1 || $DAY -eq 4) && $HOUR -eq 17 && $MIN -eq 0 ]]; then
+          if [[ "$SCHEDULE" == "0 17 * * 1" || "$SCHEDULE" == "0 17 * * 4" ]]; then
             echo "job_type=weekly_tech" >> $GITHUB_OUTPUT
-          # Tuesday or Friday 16:30 UTC → Q&A PDF
-          elif [[ ($DAY -eq 2 || $DAY -eq 5) && $HOUR -eq 16 && $MIN -eq 30 ]]; then
+          elif [[ "$SCHEDULE" == "30 16 * * 2" || "$SCHEDULE" == "30 16 * * 5" ]]; then
             echo "job_type=pdf" >> $GITHUB_OUTPUT
           else
             echo "job_type=daily" >> $GITHUB_OUTPUT
