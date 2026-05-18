@@ -338,7 +338,7 @@ STRICT LinkedIn post rules:
     payload = {
         "contents": [{"parts": [{"text": full_prompt}]}],
         "generationConfig": {
-            "maxOutputTokens": 800,
+            "maxOutputTokens": 2048,
             "temperature": 0.85
         }
     }
