@@ -45,6 +45,8 @@ jobs:
     needs: determine_job
     if: needs.determine_job.outputs.job_type == 'daily'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -106,6 +108,8 @@ jobs:
     needs: determine_job
     if: needs.determine_job.outputs.job_type == 'weekly_tech'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
