@@ -331,7 +331,8 @@ STRICT LinkedIn post rules:
 - End with ONE specific question to get comments
 - Very last line: 4-5 hashtags only
 - Write from personal experience — use 'I', 'we', 'our team'
-- No fluff, no generic advice — every line must be useful"""
+- No fluff, no generic advice — every line must be useful
+- NEVER include any URLs or links (http://, https://) anywhere in the post — LinkedIn converts them to ugly shortened links"""
 
     full_prompt = f"{content_type['prompt']}\n\n{base_rules}\n\nWrite ONLY the post. No intro, no explanation."
 
@@ -425,6 +426,10 @@ content_type = pick_content_type()
 print(f"Today's content type: [{content_type['label']}]")
 
 post_text = generate_post(content_type)
+
+# Remove any URLs that LinkedIn would auto-convert to lnkd.in links
+import re
+post_text = re.sub(r'https?://\S+', lambda m: m.group().replace('https://', '').replace('http://', ''), post_text)
 
 print("\n" + "=" * 50)
 print("POST PREVIEW:")
