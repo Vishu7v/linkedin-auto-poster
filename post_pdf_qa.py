@@ -75,7 +75,7 @@ Make answers practical, not theoretical. Include code when relevant.
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
-            "maxOutputTokens": 2000,
+            "maxOutputTokens": 8192,
             "temperature": 0.7
         }
     }
@@ -102,18 +102,33 @@ Make answers practical, not theoretical. Include code when relevant.
                 if resp.status_code == 200:
                     text = resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
                     print(f"Generated Q&A content using {model}")
-                    
+
+                    # Strip markdown fences (```json, ```, etc.)
+                    import re
+                    json_str = re.sub(r'^```(?:json)?\s*', '', text, flags=re.IGNORECASE)
+                    json_str = re.sub(r'\s*```$', '', json_str).strip()
+
                     # Parse JSON response
                     try:
-                        qa_data = json.loads(text)
+                        qa_data = json.loads(json_str)
                         return qa_data
                     except json.JSONDecodeError:
-                        # Try to extract JSON if it has markdown backticks
-                        if "```json" in text:
-                            json_str = text.split("```json")[1].split("```")[0].strip()
-                            qa_data = json.loads(json_str)
-                            return qa_data
-                        raise
+                        # Gemini returned truncated JSON — trim to last complete question
+                        print("JSON parse failed, attempting recovery...")
+                        # Find last complete closing brace for a question object
+                        last_good = json_str.rfind('},\n        {')
+                        if last_good == -1:
+                            last_good = json_str.rfind('},')
+                        if last_good != -1:
+                            trimmed = json_str[:last_good + 1] + "\n    ]\n}"
+                            try:
+                                qa_data = json.loads(trimmed)
+                                print("JSON recovered successfully")
+                                return qa_data
+                            except json.JSONDecodeError:
+                                pass
+                        print(f"JSON recovery failed, trying next model...")
+                        break
                         
                 elif resp.status_code in [503, 429]:
                     print(f"{model} unavailable ({resp.status_code}) — trying next model...")
