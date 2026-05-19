@@ -368,17 +368,18 @@ Perfect for interview prep or leveling up your skills! 🚀
         sys.exit(1)
 
 # ── MAIN ──────────────────────────────────────────────────────
-qa_data = generate_qa_content()
+if __name__ == "__main__":
+    qa_data = generate_qa_content()
 
-print("\n" + "=" * 50)
-print(f"GENERATED Q&A: {qa_data.get('title', 'New Q&A Guide')}")
-print(f"Topic: {qa_data.get('topic', 'Data Engineering')}")
-print(f"Questions: {len(qa_data.get('questions', []))}")
-print("=" * 50 + "\n")
+    print("\n" + "=" * 50)
+    print(f"GENERATED Q&A: {qa_data.get('title', 'New Q&A Guide')}")
+    print(f"Topic: {qa_data.get('topic', 'Data Engineering')}")
+    print(f"Questions: {len(qa_data.get('questions', []))}")
+    print("=" * 50 + "\n")
 
-pdf_bytes = create_qa_pdf(qa_data)
-print(f"PDF created: {len(pdf_bytes)} bytes")
+    pdf_bytes = create_qa_pdf(qa_data)
+    print(f"PDF created: {len(pdf_bytes)} bytes")
 
-post_pdf_to_linkedin(pdf_bytes, qa_data)
+    post_pdf_to_linkedin(pdf_bytes, qa_data)
 
-print("Done! PDF posted to LinkedIn.")
+    print("Done! PDF posted to LinkedIn.")
