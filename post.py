@@ -346,8 +346,8 @@ STRICT LinkedIn post rules:
 
     # Fallback models — tries each one if previous fails with 503/429
     models = [
-        "gemini-2.5-flash",
         "gemini-2.0-flash",
+        "gemini-2.5-flash",
         "gemini-2.0-flash-lite",
         "gemini-flash-latest",
         "gemini-flash-lite-latest",
@@ -427,8 +427,11 @@ print(f"Today's content type: [{content_type['label']}]")
 
 post_text = generate_post(content_type)
 
-# Remove any URLs that LinkedIn would auto-convert to lnkd.in links
+# Remove markdown backticks (LinkedIn shows them as literal characters)
 import re
+post_text = re.sub(r'```[a-zA-Z]*\n?', '', post_text)  # strip opening ```lang
+post_text = post_text.replace('```', '')               # strip closing ```
+# Remove any URLs that LinkedIn would auto-convert to lnkd.in links
 post_text = re.sub(r'https?://\S+', lambda m: m.group().replace('https://', '').replace('http://', ''), post_text)
 
 print("\n" + "=" * 50)
