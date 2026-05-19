@@ -1715,7 +1715,7 @@ def post_pdf_to_linkedin(pdf_bytes: bytes, data: dict) -> None:
     print("Step 1: Registering PDF upload with LinkedIn …")
     register_payload = {
         "registerUploadRequest": {
-            "recipes": ["SERVER_INITIATED_UPLOAD"],
+            "recipes": ["urn:li:digitalmediaRecipe:feedshare-document"],
             "owner": PERSON_URN,
             "serviceRelationships": [{
                 "relationshipType": "OWNER",
