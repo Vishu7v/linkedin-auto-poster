@@ -81,8 +81,8 @@ Make answers practical, not theoretical. Include code when relevant.
     }
 
     models = [
-        "gemini-2.5-flash",
         "gemini-2.0-flash",
+        "gemini-2.5-flash",
         "gemini-2.0-flash-lite",
         "gemini-flash-latest",
         "gemini-flash-lite-latest",
@@ -284,7 +284,7 @@ def post_pdf_to_linkedin(pdf_bytes: bytes, qa_data: dict):
     print("Step 1: Registering PDF upload...")
     register_payload = {
         "registerUploadRequest": {
-            "recipes": ["SERVER_INITIATED_UPLOAD"],
+            "recipes": ["urn:li:digitalmediaRecipe:feedshare-document"],
             "owner": PERSON_URN,
             "serviceRelationships": [{"relationshipType": "OWNER", "identifier": "urn:li:userGeneratedContent"}]
         }
