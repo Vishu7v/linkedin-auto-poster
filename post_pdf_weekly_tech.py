@@ -1705,46 +1705,35 @@ def create_pdf(data: dict) -> bytes:
 
 # ── LINKEDIN PDF UPLOAD & POST ────────────────────────────────────────────────
 def post_pdf_to_linkedin(pdf_bytes: bytes, data: dict) -> None:
-    """Register upload, upload PDF, create LinkedIn post."""
+    """Register upload, upload PDF, create LinkedIn post using new REST API."""
     headers = {
         "Authorization": f"Bearer {LINKEDIN_TOKEN}",
+        "LinkedIn-Version": "202302",
         "X-Restli-Protocol-Version": "2.0.0",
+        "Content-Type": "application/json",
     }
 
-    # Step 1 — Register upload
-    print("Step 1: Registering PDF upload with LinkedIn …")
-    register_payload = {
-        "registerUploadRequest": {
-            "recipes": ["urn:li:digitalmediaRecipe:feedshare-document"],
-            "owner": PERSON_URN,
-            "serviceRelationships": [{
-                "relationshipType": "OWNER",
-                "identifier": "urn:li:userGeneratedContent",
-            }],
-        }
-    }
+    # Step 1 — Initialize upload (new REST API)
+    print("Step 1: Initializing PDF upload with LinkedIn …")
     resp = requests.post(
-        "https://api.linkedin.com/v2/assets?action=registerUpload",
+        "https://api.linkedin.com/rest/documents?action=initializeUpload",
         headers=headers,
-        json=register_payload,
+        json={"initializeUploadRequest": {"owner": PERSON_URN}},
         timeout=30,
     )
     if resp.status_code != 200:
-        print(f"Register upload failed: {resp.status_code} — {resp.text}")
+        print(f"Initialize upload failed: {resp.status_code} — {resp.text}")
         sys.exit(1)
 
-    upload_url = (
-        resp.json()["value"]["uploadMechanism"]
-        ["com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest"]["uploadUrl"]
-    )
-    asset_urn = resp.json()["value"]["asset"]
-    print(f"Upload URL obtained. Asset: {asset_urn}")
+    upload_url = resp.json()["value"]["uploadUrl"]
+    document_urn = resp.json()["value"]["document"]
+    print(f"Upload initialized. Document URN: {document_urn}")
 
     # Step 2 — Upload PDF binary
     print("Step 2: Uploading PDF …")
     resp = requests.put(
         upload_url,
-        headers={"Content-Type": "application/pdf"},
+        headers={"Content-Type": "application/octet-stream"},
         data=pdf_bytes,
         timeout=120,
     )
@@ -1753,28 +1742,29 @@ def post_pdf_to_linkedin(pdf_bytes: bytes, data: dict) -> None:
         sys.exit(1)
     print("PDF uploaded ✓")
 
-    # Step 3 — Create the LinkedIn post
+    # Step 3 — Create the LinkedIn post using new REST posts API
     print("Step 3: Creating LinkedIn post …")
     caption = data.get("linkedin_caption", "New weekly data engineering guide! 📥")
     post_payload = {
         "author": PERSON_URN,
-        "lifecycleState": "PUBLISHED",
-        "specificContent": {
-            "com.linkedin.ugc.ShareContent": {
-                "shareCommentary": {"text": caption},
-                "shareMediaCategory": "DOCUMENT",
-                "media": [{
-                    "status": "READY",
-                    "media": asset_urn,
-                    "title": {"text": data.get("title", "Weekly Tech Guide")},
-                    "description": {"text": data.get("subtitle", "")},
-                }],
+        "commentary": caption,
+        "visibility": "PUBLIC",
+        "distribution": {
+            "feedDistribution": "MAIN_FEED",
+            "targetEntities": [],
+            "thirdPartyDistributionChannels": []
+        },
+        "content": {
+            "media": {
+                "title": data.get("title", "Weekly Tech Guide"),
+                "id": document_urn
             }
         },
-        "visibility": {"com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"},
+        "lifecycleState": "PUBLISHED",
+        "isReshareDisabledByAuthor": False
     }
     resp = requests.post(
-        "https://api.linkedin.com/v2/ugcPosts",
+        "https://api.linkedin.com/rest/posts",
         headers=headers,
         json=post_payload,
         timeout=30,
