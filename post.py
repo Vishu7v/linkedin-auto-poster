@@ -339,7 +339,7 @@ STRICT LinkedIn post rules:
     payload = {
         "contents": [{"parts": [{"text": full_prompt}]}],
         "generationConfig": {
-            "maxOutputTokens": 2048,
+            "maxOutputTokens": 8192,
             "temperature": 0.85
         }
     }
@@ -365,7 +365,20 @@ STRICT LinkedIn post rules:
                     timeout=60
                 )
                 if resp.status_code == 200:
-                    text = resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+                    candidate = resp.json()["candidates"][0]
+                    finish_reason = candidate.get("finishReason", "STOP")
+                    text = candidate["content"]["parts"][0]["text"].strip()
+
+                    # If Gemini hit token limit, the post is truncated — skip to next model
+                    if finish_reason == "MAX_TOKENS":
+                        print(f"{model} hit token limit (post truncated) — trying next model...")
+                        break
+
+                    # Validate post ends with hashtags (complete post check)
+                    if "#" not in text:
+                        print(f"{model} returned incomplete post (no hashtags) — trying next model...")
+                        break
+
                     print(f"Generated {len(text)} chars using {model}")
                     return text
                 elif resp.status_code in [503, 429]:
