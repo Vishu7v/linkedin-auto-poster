@@ -277,7 +277,7 @@ def post_pdf_to_linkedin(pdf_bytes: bytes, qa_data: dict):
 
     headers = {
         "Authorization": f"Bearer {LINKEDIN_TOKEN}",
-        "LinkedIn-Version": "202302",
+        "LinkedIn-Version": "202501",
         "X-Restli-Protocol-Version": "2.0.0",
         "Content-Type": "application/json",
     }
