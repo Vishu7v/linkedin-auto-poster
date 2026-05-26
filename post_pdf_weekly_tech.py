@@ -1708,7 +1708,7 @@ def post_pdf_to_linkedin(pdf_bytes: bytes, data: dict) -> None:
     """Register upload, upload PDF, create LinkedIn post using new REST API."""
     headers = {
         "Authorization": f"Bearer {LINKEDIN_TOKEN}",
-        "LinkedIn-Version": "202501",
+        "LinkedIn-Version": "202604",
         "X-Restli-Protocol-Version": "2.0.0",
         "Content-Type": "application/json",
     }
