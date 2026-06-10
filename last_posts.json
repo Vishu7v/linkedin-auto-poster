@@ -1,17 +1,6 @@
 {
   "used": [
-    "Data Pipeline Design",
-    "Python Code Tip",
-    "Databricks Code Tip",
-    "Interview Q&A with Code",
-    "Azure Code Tip",
-    "ADF Pipeline Tip",
-    "Cheat Sheet with Code",
-    "Performance Optimisation",
-    "PySpark Code Tip",
-    "Mistake and Fix with Code",
-    "AWS Code Tip",
-    "SQL Code Tip"
+    "Mistake and Fix with Code"
   ],
-  "updated": "2026-06-09 17:15:24.531628"
+  "updated": "2026-06-10 16:12:58.390684"
 }
