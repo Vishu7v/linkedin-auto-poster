@@ -4,7 +4,8 @@
     "VS Code + Claude AI Setup Guide",
     "GitHub & Databricks Integration",
     "Delta Live Tables (DLT) Mastery",
-    "Unity Catalog & RBAC"
+    "Unity Catalog & RBAC",
+    "Data Catalog & Data Governance"
   ],
-  "weekly_tech_last": "Unity Catalog & RBAC"
+  "weekly_tech_last": "Data Catalog & Data Governance"
 }
