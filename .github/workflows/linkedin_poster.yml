@@ -57,7 +57,7 @@ jobs:
           python-version: '3.11'
       
       - name: Install dependencies
-        run: pip install requests
+        run: pip install requests Pillow
       
       - name: Pull latest tracker file
         run: |
