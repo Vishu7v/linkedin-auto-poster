@@ -10,7 +10,8 @@
     "Databricks External Connections",
     "MCP \u2014 Model Context Protocol for Data Engineers",
     "LangChain for Data Engineers",
-    "Azure Data Factory \u2014 Advanced Patterns"
+    "Azure Data Factory \u2014 Advanced Patterns",
+    "LLMs in Production \u2014 Data Engineering Perspective"
   ],
-  "weekly_tech_last": "Azure Data Factory \u2014 Advanced Patterns"
+  "weekly_tech_last": "LLMs in Production \u2014 Data Engineering Perspective"
 }
