@@ -12,7 +12,8 @@
     "LangChain for Data Engineers",
     "Azure Data Factory \u2014 Advanced Patterns",
     "LLMs in Production \u2014 Data Engineering Perspective",
-    "Mini Project \u2014 End-to-End Sales Analytics Pipeline"
+    "Mini Project \u2014 End-to-End Sales Analytics Pipeline",
+    "Mini Project \u2014 Real-Time Streaming with Kafka & Databricks"
   ],
-  "weekly_tech_last": "Mini Project \u2014 End-to-End Sales Analytics Pipeline"
+  "weekly_tech_last": "Mini Project \u2014 Real-Time Streaming with Kafka & Databricks"
 }
