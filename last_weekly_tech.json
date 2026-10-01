@@ -18,7 +18,8 @@
     "Databricks + Snowflake Integration Patterns",
     "dbt \u2014 Data Build Tool Complete Guide",
     "Apache Airflow for Data Orchestration",
-    "Mini Project \u2014 GitHub to Databricks Full DataOps Setup"
+    "Mini Project \u2014 GitHub to Databricks Full DataOps Setup",
+    "PySpark Performance Optimization \u2014 Deep Dive"
   ],
-  "weekly_tech_last": "Mini Project \u2014 GitHub to Databricks Full DataOps Setup"
+  "weekly_tech_last": "PySpark Performance Optimization \u2014 Deep Dive"
 }
